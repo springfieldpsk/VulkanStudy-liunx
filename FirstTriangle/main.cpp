@@ -3,6 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
+#include <bits/stdc++.h>
 #include <GLFW/glfw3.h>
 
 class HelloTriangleApplication {
@@ -19,6 +20,43 @@ private:
     const uint32_t HEIGHT = 600;
     GLFWwindow *  window;
     VkInstance instance; //vulkan 实例
+
+    const std::vector<const char*> validationLayers = {
+        "VK_LAYER_KHRONOS_validation"
+    };
+    // 启用 Vulkan SDK 标准诊断层
+
+    #ifdef NDEBUG
+        const bool enableValidationLayers = false;
+    #else
+        const bool enableValidationLayers = true;
+    #endif
+
+    bool checkValidationLayerSupport(){
+        uint32_t layerCount ;
+        vkEnumerateInstanceLayerProperties(&layerCount,nullptr);
+
+        std::vector<VkLayerProperties> availableLayers(layerCount);
+        vkEnumerateInstanceLayerProperties(&layerCount,availableLayers.data());
+
+        for(const char* layerName : validationLayers){
+            bool layerFound = false;
+
+            for(const auto& layerProperties : availableLayers){
+                if(strcmp(layerName,layerProperties.layerName) == 0){
+                    layerFound = true;
+                    break;
+                }
+            }
+
+            if(!layerFound){
+                return false;
+            }
+        }
+
+        return true;
+    }
+    // 确定所有的验证请求层是否可用
 
     void createInstance(){
         VkApplicationInfo appInfo{};
@@ -53,6 +91,21 @@ private:
             throw std::runtime_error("failed to create instance");
             // 若返回result不为VK_SUCCESS 则抛出错误
         }
+
+        uint32_t extensionCount = 0;
+        vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+        // 通过留空获取扩展数量
+
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        vkEnumerateInstanceExtensionProperties(nullptr,&extensionCount,extensions.data());
+        // 获取扩展详细信息
+
+        std::cout << "available extensions: \n";
+        for(const auto& extension : extensions){
+            std::cout << '\t' << extension.extensionName<<' '<<extension.specVersion<<'\n';
+        }
+
+        
     }
     // 创建实例，向驱动程序提供信息以对特定应用优化
     void initVulkan() {
@@ -79,6 +132,9 @@ private:
     }
 
     void cleanup() {
+        vkDestroyInstance(instance, nullptr);
+        // 清理 vk 实例
+
         glfwDestroyWindow(window);
         // 清理窗口
 
